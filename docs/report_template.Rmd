@@ -1,0 +1,207 @@
+---
+pagetitle: "Final Exam"
+output:
+  html_document:
+    theme: null
+    highlight: null
+    mathjax: null
+    css: report.css
+    includes:
+      after_body: report_scroll.html
+knit: (function(input, ...) rmarkdown::render(
+    input, output_file = "index.html"))
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo      = FALSE,
+  message   = FALSE,
+  warning   = FALSE,
+  fig.width  = 6,
+  fig.height = 3.5,
+  dpi        = 150,
+  out.width  = "100%"
+)
+library(dplyr)
+library(ggplot2)
+library(ggridges)
+
+df <- readRDS("../data/test4_dataset.rds")
+```
+
+<div class="report-wrap">
+
+<!-- ── HEADER ──────────────────────────────────── -->
+
+<header class="report-header fade-in">
+  <p class="report-kicker">
+  CDC Survey Findings, Sleep and Health &middot; MBAA 531
+  </p>
+  <h1 class="report-headline">
+   Rest Matters: Unpacking the Link Between Sleep, Stress, and Mental Health at Scale
+  </h1>
+  <p class="report-deck">
+   An analysis of the CDC Sleep and Performance Survey exploring how stress and mental health conditions shape sleep quality across a large national sample.
+  </p>
+  <p class="report-byline">
+    By <strong> AMA </strong> &middot;
+    Dataset: CDC Sleep and Performance Survey
+  </p>
+</header>
+
+
+<!-- ── SECTION 1: THE DATA ─────────────────────── -->
+
+::: {.report-section .fade-in}
+
+## The Data
+
+The *CDC Sleep and Performance Survey* captures self-reported sleep habits and lifestyle behaviours from **51,262 respondents** across the United States. Each row represents one individual, and the 32 columns cover variables including sleep duration, sleep quality, physical activity, and mental health indicators. Together, these variables paint a detailed picture of how everyday habits intersect with how well people sleep and function.
+
+This dataset matters because sleep deprivation is a widespread public health concern, and with over 51,000 observations it is large enough to detect meaningful patterns across different demographic and lifestyle groups. Two data quality points are worth noting: the `mental_health` column is stored as a character type rather than numeric, and there is no direct `stress_level` column — instead, stress categories of Low, Moderate, and High are derived from a numeric `stress_score` on a 1–10 scale. Both issues are addressed before any analysis is performed.
+
+:::
+
+
+<!-- ── SECTION 2: THE CENTRAL FINDING ─────────── -->
+
+::: {.report-section .fade-in}
+
+## The Central Finding
+
+The derived variable `deep_sleep_density` measures how much deep sleep a respondent achieves per hour of total sleep. It is calculated by dividing `deep_sleep_pct` by `sleep_hrs`, producing a ratio that captures not just how much deep sleep someone gets, but how efficiently they achieve it relative to their total time asleep. This matters because two people can sleep the same number of hours while having very different deep sleep profiles — this variable surfaces that difference.
+
+<div class="pull-stat fade-in">
+  <span class="stat-number">3.17</span>
+  <span class="stat-label">
+     For every hour of sleep, the typical respondent spends just over 3% of it in deep sleep.
+  </span>
+</div>
+
+`deep_sleep_density` measures the percentage of each hour of sleep is spent in deep sleep. A median of 3.17 percentage points per hour tells us that deep sleep is a small but stable fraction of total sleep for most respondents. A higher value would indicate someone packing more restorative deep sleep into each hour, while a lower value suggests their sleep hours are filled with lighter, less restorative stages. Given that deep sleep is critical for physical recovery and memory consolidation, respondents with consistently low `deep_sleep_density` may be sleeping long hours without gaining the full benefits of rest.
+
+:::
+
+
+<!-- ── SECTION 3: SCATTER CHART ───────────────── -->
+
+::: {.report-section .fade-in}
+
+## A Closer Look
+
+If stress undermines sleep, we would expect to see higher stress scores paired with lower sleep quality — a downward pattern from left to right. The scatterplot below plots `sleep_quality` on the x-axis against `stress_score` on the y-axis across all **51,262 respondents**, making that relationship visible at scale. The dense core of the cloud and the scatter at its edges will reveal not just whether the pattern holds, but how consistent it is across the sample.
+
+<div class="chart-wrap">
+```{r load-new-csv}
+df_new <- read.csv("../data/cdc_survey.csv")
+```
+
+```{r scatter, fig.cap="Chart 1 -- Scatter Chart"}
+ggplot(df_new, aes(x = sleep_quality, y = stress_score)) +
+   geom_point(
+    alpha  = 0.4,
+    size   = 1.4,
+    colour = "#c0392b"
+  ) +
+  labs(
+    title = "Sleep Impacted by Stress",
+    x     = NULL,
+    y     = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(
+      colour = "#eeeeee"
+    ),
+    axis.text = element_text(colour = "#555")
+  )
+```
+
+<p class="chart-caption">
+  Chart 1: Scatterplot of sleep quality (x-axis, scale 1–10) against stress score (y-axis, scale 1–10) for 51,262 respondents, showing the relationship between the two variables.
+</p>
+</div>
+
+The downward sweep of the cloud confirms the expected pattern — as sleep quality increases, stress scores fall. This negative relationship suggests that sleep quality is not just a symptom of stress, but a meaningful signal worth examining alongside other lifestyle variables in this dataset.
+
+:::
+
+
+<!-- ── SECTION 4: RIDGE CHART ─────────────────── -->
+
+::: {.report-section .fade-in}
+
+## Across Groups
+
+To understand whether stress affects mental health groups differently, `mental_health` was chosen as the grouping variable and plotted against `stress_score`. The expectation was that respondents reporting depression, anxiety, or both would show stress distributions shifted toward higher scores compared to the healthy group — revealing not just that stress and mental health are linked, but whether certain conditions amplify that relationship more than others.
+
+<div class="chart-wrap">
+
+```{r ridge, fig.cap="Chart 2 -- Ridge Chart"}
+ggplot(df, aes(x    = stress_score,
+               y    = mental_health,
+               fill = mental_health)) +
+   geom_density_ridges(
+    alpha     = 0.55,
+    colour    = "white",
+    linewidth = 0.4
+  ) +
+  scale_fill_manual(
+    values = rep("#c0392b", 20)
+  ) +
+  labs(title = "Impacts of Stress on Mental Health", x = NULL, y = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position    = "none",
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(
+      colour = "#eeeeee"
+    ),
+    axis.text = element_text(colour = "#555")
+  )
+```
+  
+
+<p class="chart-caption">
+  Chart 2:  Ridge plot showing the distribution of stress score (x-axis, scale 0–10) across four mental health groups — Healthy, Depression, Both, and Anxiety — illustrating how stress levels differ by mental health status.
+</p>
+</div>
+
+The Healthy group peaks sharply around 6, while Depression, Anxiety, and Both show flatter distributions that spread further toward higher stress scores. This reveals what the scatterplot could not: stress does not affect all mental health groups equally, with those living with depression or multiple conditions carrying a heavier and more dispersed stress burden.
+
+
+:::
+
+
+<!-- ── CONCLUSION ──────────────────────────────── -->
+
+::: {.report-section .fade-in}
+
+## What This Means
+
+The two charts together build a compelling case. The scatterplot established that sleep quality and stress move in opposite directions at the individual level, while the ridge plot showed this burden is not shared equally — respondents living with depression, anxiety, or both face stress distributions that are heavier and more spread out than their healthy counterparts. For a decision-maker, the takeaway is clear: sleep quality is not just a personal lifestyle metric, but a signal that tracks closely with stress and mental health status across a population of 51,262 people, making it a meaningful target for workplace wellbeing programs and public health interventions.
+
+What the data cannot answer is the direction of causality. Does poor sleep drive stress and worsen mental health, or do stress and mental health conditions erode sleep quality? The survey captures a snapshot in time rather than a sequence of events, so the relationships observed here are associative rather than causal. A longitudinal study tracking the same respondents over time would be needed to untangle which comes first.
+
+:::
+
+
+<!-- ── FOOTER ──────────────────────────────────── -->
+
+<footer class="report-footer">
+  <p>
+    Published via GitHub Pages &middot;
+    MBAA 531 Data Analytics &middot;
+    Vancouver Island University
+  </p>
+  <p>
+    Source:
+    <a href="https://github.com/aalunan/mbaa531-report">
+      github.com/aalunan/mbaa531-report
+    </a>
+  </p>
+</footer>
+
+</div><!-- end .report-wrap -->
